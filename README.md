@@ -24,7 +24,7 @@ This project downloads a cricket batting video from YouTube, analyzes the player
 ```bash
 # Clone repository
 git clone <repo-link>
-cd cricket-pose-analysis
+cd Cricket-Batting-Pose-Analysis
 
 # Install dependencies
 pip install -r requirements.txt
