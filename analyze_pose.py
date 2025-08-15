@@ -1,0 +1,376 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyMY6QJkl+3+pdc87f+ogtRD"
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install mediapipe opencv-python yt-dlp numpy"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "uCYegH2KRo4o",
+        "outputId": "612040bb-15fa-4cb7-d38a-a7bb31ea31e2"
+      },
+      "execution_count": 17,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: mediapipe in /usr/local/lib/python3.11/dist-packages (0.10.14)\n",
+            "Requirement already satisfied: opencv-python in /usr/local/lib/python3.11/dist-packages (4.12.0.88)\n",
+            "Requirement already satisfied: yt-dlp in /usr/local/lib/python3.11/dist-packages (2025.8.11)\n",
+            "Requirement already satisfied: numpy in /usr/local/lib/python3.11/dist-packages (2.0.2)\n",
+            "Requirement already satisfied: absl-py in /usr/local/lib/python3.11/dist-packages (from mediapipe) (1.4.0)\n",
+            "Requirement already satisfied: attrs>=19.1.0 in /usr/local/lib/python3.11/dist-packages (from mediapipe) (25.3.0)\n",
+            "Requirement already satisfied: flatbuffers>=2.0 in /usr/local/lib/python3.11/dist-packages (from mediapipe) (25.2.10)\n",
+            "Requirement already satisfied: jax in /usr/local/lib/python3.11/dist-packages (from mediapipe) (0.5.3)\n",
+            "Requirement already satisfied: jaxlib in /usr/local/lib/python3.11/dist-packages (from mediapipe) (0.5.3)\n",
+            "Requirement already satisfied: matplotlib in /usr/local/lib/python3.11/dist-packages (from mediapipe) (3.10.0)\n",
+            "Requirement already satisfied: opencv-contrib-python in /usr/local/lib/python3.11/dist-packages (from mediapipe) (4.12.0.88)\n",
+            "Requirement already satisfied: protobuf<5,>=4.25.3 in /usr/local/lib/python3.11/dist-packages (from mediapipe) (4.25.8)\n",
+            "Requirement already satisfied: sounddevice>=0.4.4 in /usr/local/lib/python3.11/dist-packages (from mediapipe) (0.5.2)\n",
+            "Requirement already satisfied: CFFI>=1.0 in /usr/local/lib/python3.11/dist-packages (from sounddevice>=0.4.4->mediapipe) (1.17.1)\n",
+            "Requirement already satisfied: ml_dtypes>=0.4.0 in /usr/local/lib/python3.11/dist-packages (from jax->mediapipe) (0.5.3)\n",
+            "Requirement already satisfied: opt_einsum in /usr/local/lib/python3.11/dist-packages (from jax->mediapipe) (3.4.0)\n",
+            "Requirement already satisfied: scipy>=1.11.1 in /usr/local/lib/python3.11/dist-packages (from jax->mediapipe) (1.16.1)\n",
+            "Requirement already satisfied: contourpy>=1.0.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (1.3.3)\n",
+            "Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (0.12.1)\n",
+            "Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (4.59.0)\n",
+            "Requirement already satisfied: kiwisolver>=1.3.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (1.4.9)\n",
+            "Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (25.0)\n",
+            "Requirement already satisfied: pillow>=8 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (11.3.0)\n",
+            "Requirement already satisfied: pyparsing>=2.3.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (3.2.3)\n",
+            "Requirement already satisfied: python-dateutil>=2.7 in /usr/local/lib/python3.11/dist-packages (from matplotlib->mediapipe) (2.9.0.post0)\n",
+            "Requirement already satisfied: pycparser in /usr/local/lib/python3.11/dist-packages (from CFFI>=1.0->sounddevice>=0.4.4->mediapipe) (2.22)\n",
+            "Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.11/dist-packages (from python-dateutil>=2.7->matplotlib->mediapipe) (1.17.0)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import cv2\n",
+        "import mediapipe as mp\n",
+        "import numpy as np\n",
+        "import json\n",
+        "import os\n",
+        "import math"
+      ],
+      "metadata": {
+        "id": "85Nqw6UUePiu"
+      },
+      "execution_count": 30,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "\n",
+        "video_url = \"https://youtube.com/shorts/vSX3IRxGnNY\"\n",
+        "output_video_path = \"/content/input_video.mp4\"\n",
+        "\n",
+        "# Download video\n",
+        "!yt-dlp -f mp4 -o \"{output_video_path}\" {video_url}\n",
+        "\n",
+        "print(\"Video downloaded:\", output_video_path)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "XPMsrM2XybaX",
+        "outputId": "a6a07944-cd91-4ae2-fb45-c9744d9e51b7"
+      },
+      "execution_count": 26,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "[youtube] Extracting URL: https://youtube.com/shorts/vSX3IRxGnNY\n",
+            "[youtube] vSX3IRxGnNY: Downloading webpage\n",
+            "[youtube] vSX3IRxGnNY: Downloading tv client config\n",
+            "[youtube] vSX3IRxGnNY: Downloading tv player API JSON\n",
+            "[youtube] vSX3IRxGnNY: Downloading ios player API JSON\n",
+            "[youtube] vSX3IRxGnNY: Downloading m3u8 information\n",
+            "[info] vSX3IRxGnNY: Downloading 1 format(s): 18\n",
+            "[download] Destination: /content/input_video.mp4\n",
+            "\u001b[K[download] 100% of  337.54KiB in \u001b[1;37m00:00:00\u001b[0m at \u001b[0;32m1.54MiB/s\u001b[0m\n",
+            "✅ Video downloaded: /content/input_video.mp4\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "input_video_path = \"/content/input_video.mp4\"   # <-- replace with your video path\n",
+        "output_video_path = \"/content/annotated_video.mp4\"\n",
+        "output_eval_path = \"/content/evaluation.json\""
+      ],
+      "metadata": {
+        "id": "oDOJOmMVRqp_"
+      },
+      "execution_count": 27,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Initialize MediaPipe Pose\n",
+        "mp_pose = mp.solutions.pose\n",
+        "mp_drawing = mp.solutions.drawing_utils\n",
+        "pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)"
+      ],
+      "metadata": {
+        "id": "U6PkCox-TJN3"
+      },
+      "execution_count": 20,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Open video\n",
+        "cap = cv2.VideoCapture(input_video_path)\n",
+        "if not cap.isOpened():\n",
+        "    raise FileNotFoundError(f\"Cannot open {input_video_path}\")"
+      ],
+      "metadata": {
+        "id": "-ZoaYBvnTUcZ"
+      },
+      "execution_count": 28,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Video writer setup\n",
+        "fourcc = cv2.VideoWriter_fourcc(*'mp4v')\n",
+        "fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30\n",
+        "width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))\n",
+        "height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))\n",
+        "out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))"
+      ],
+      "metadata": {
+        "id": "M2QQr71-Tg1n"
+      },
+      "execution_count": 29,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def calculate_angle(a, b, c):\n",
+        "    \"\"\"Calculate the angle between three points\"\"\"\n",
+        "    try:\n",
+        "        a = [a.x, a.y]\n",
+        "        b = [b.x, b.y]\n",
+        "        c = [c.x, c.y]\n",
+        "        radians = math.atan2(c[1] - b[1], c[0] - b[0]) - \\\n",
+        "                  math.atan2(a[1] - b[1], a[0] - b[0])\n",
+        "        angle = abs(radians * 180.0 / math.pi)\n",
+        "        if angle > 180:\n",
+        "            angle = 360 - angle\n",
+        "        return angle\n",
+        "    except:\n",
+        "        return None"
+      ],
+      "metadata": {
+        "id": "PyFWe-paUm6Y"
+      },
+      "execution_count": 31,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "scores = {\n",
+        "    \"Footwork\": 0,\n",
+        "    \"Head Position\": 0,\n",
+        "    \"Swing Control\": 0,\n",
+        "    \"Balance\": 0,\n",
+        "    \"Follow-through\": 0\n",
+        "}\n",
+        "total_frames = 0\n",
+        "detected_frames = 0"
+      ],
+      "metadata": {
+        "id": "72udwxXSehfA"
+      },
+      "execution_count": 32,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "while cap.isOpened():\n",
+        "    ret, frame = cap.read()\n",
+        "    if not ret:\n",
+        "        break\n",
+        "    total_frames += 1\n",
+        "\n",
+        "    # Convert color\n",
+        "    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)\n",
+        "    results = pose.process(image_rgb)\n",
+        "\n",
+        "    if results.pose_landmarks:\n",
+        "        detected_frames += 1\n",
+        "        mp_drawing.draw_landmarks(\n",
+        "            frame,\n",
+        "            results.pose_landmarks,\n",
+        "            mp_pose.POSE_CONNECTIONS\n",
+        "        )\n",
+        "\n",
+        "        lm = results.pose_landmarks.landmark\n",
+        "\n",
+        "        # Front elbow angle (Right arm example)\n",
+        "        elbow_angle = calculate_angle(lm[mp_pose.PoseLandmark.RIGHT_SHOULDER],\n",
+        "                                      lm[mp_pose.PoseLandmark.RIGHT_ELBOW],\n",
+        "                                      lm[mp_pose.PoseLandmark.RIGHT_WRIST])\n",
+        "        if elbow_angle:\n",
+        "            cv2.putText(frame, f\"Elbow: {int(elbow_angle)} deg\", (30,60),\n",
+        "                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)\n",
+        "            if 100 <= elbow_angle <= 130:\n",
+        "                cv2.putText(frame, \"Good elbow elevation\", (30,90),\n",
+        "                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)\n",
+        "                scores[\"Swing Control\"] += 1\n",
+        "            else:\n",
+        "                cv2.putText(frame, \"Elbow too low/high\", (30,90),\n",
+        "                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)\n",
+        "\n",
+        "        # Head-over-knee check\n",
+        "        try:\n",
+        "            head_x = lm[mp_pose.PoseLandmark.NOSE].x\n",
+        "            knee_x = lm[mp_pose.PoseLandmark.RIGHT_KNEE].x\n",
+        "            if abs(head_x - knee_x) < 0.05:\n",
+        "                cv2.putText(frame, \"Head over knee\", (30,120),\n",
+        "                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)\n",
+        "                scores[\"Head Position\"] += 1\n",
+        "            else:\n",
+        "                cv2.putText(frame, \"Head not over knee\", (30,120),\n",
+        "                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)\n",
+        "        except:\n",
+        "            pass\n",
+        "\n",
+        "        # Foot direction (Right foot example)\n",
+        "        try:\n",
+        "            foot_angle = calculate_angle(lm[mp_pose.PoseLandmark.RIGHT_KNEE],\n",
+        "                                         lm[mp_pose.PoseLandmark.RIGHT_ANKLE],\n",
+        "                                         lm[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX])\n",
+        "            if foot_angle:\n",
+        "                if 70 <= foot_angle <= 110:\n",
+        "                    cv2.putText(frame, \"Good foot alignment\", (30,150),\n",
+        "                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)\n",
+        "                    scores[\"Footwork\"] += 1\n",
+        "                else:\n",
+        "                    cv2.putText(frame, \"Foot misaligned\", (30,150),\n",
+        "                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)\n",
+        "        except:\n",
+        "            pass\n",
+        "\n",
+        "    else:\n",
+        "        cv2.putText(frame, \"Missing landmarks\", (30,60),\n",
+        "                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)\n",
+        "\n",
+        "    out.write(frame)\n",
+        "\n",
+        "cap.release()\n",
+        "out.release()\n",
+        "pose.close()"
+      ],
+      "metadata": {
+        "id": "Wot6K2QSekPW"
+      },
+      "execution_count": 33,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "for key in scores:\n",
+        "    scores[key] = round((scores[key] / max(1, detected_frames)) * 10, 1)  # scale 1–10\n",
+        "\n",
+        "feedback = {\n",
+        "    \"Footwork\": \"Maintain front foot pointing toward the ball for better balance.\",\n",
+        "    \"Head Position\": \"Keep head steady over the front knee to improve control.\",\n",
+        "    \"Swing Control\": \"Good elbow elevation improves stroke timing.\",\n",
+        "    \"Balance\": \"Maintain even weight distribution for smooth execution.\",\n",
+        "    \"Follow-through\": \"Complete your swing for full power and control.\"\n",
+        "}"
+      ],
+      "metadata": {
+        "id": "dx2IHv12ettu"
+      },
+      "execution_count": 34,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "evaluation = {\n",
+        "    \"scores\": scores,\n",
+        "    \"feedback\": feedback,\n",
+        "    \"frames_analyzed\": detected_frames,\n",
+        "    \"total_frames\": total_frames\n",
+        "}\n",
+        "\n",
+        "with open(output_eval_path, \"w\") as f:\n",
+        "    json.dump(evaluation, f, indent=4)\n",
+        "\n",
+        "print(\"Processing complete.\")\n",
+        "print(f\"Detected poses in {detected_frames}/{total_frames} frames\")\n",
+        "print(f\"Video saved to: {output_video_path}\")\n",
+        "print(f\"Evaluation saved to: {output_eval_path}\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "zeJPeUJu0On3",
+        "outputId": "b7e6cbc9-07be-4a08-9e6e-c0507b376850"
+      },
+      "execution_count": 35,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "✅ Processing complete.\n",
+            "Detected poses in 136/136 frames\n",
+            "Video saved to: /content/annotated_video.mp4\n",
+            "Evaluation saved to: /content/evaluation.json\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "faIUrUES142m"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
